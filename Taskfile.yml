@@ -1,0 +1,29 @@
+version: '3'
+
+tasks:
+  endpoints:
+    cmds: 
+      - |
+        export ETCD_ENDPOINTS="localhost:32771,localhost:32772,localhost:32773"
+
+  certs:
+    deps: [mkdir-certs]
+    dir: certs
+    cmds:
+      # Generate CA cert+key
+      - openssl genrsa -out etcd.key 2048
+      - openssl req -new -x509 -sha256 -key etcd.key -out etcd.crt -days 365 -subj "/C=EG/ST=etcd-playground/L=etcd-playground/O=etcd-playground/CN=localhost.127.0.0.1"
+      # Generate Client cert+key
+      - openssl genrsa -out client.key 2048
+      - openssl req -new -key client.key -out client.csr -subj "/C=EG/ST=etcd-playground/L=etcd-playground/O=etcd-playground/CN=localhost.127.0.0.1"
+      - openssl x509 -req -in client.csr -CA etcd.crt -CAkey etcd.key -CAcreateserial -out client.crt -days 365 -sha256
+
+  verify:
+    dir: certs
+    cmds:
+      - openssl x509 -in client.crt -text -noout
+
+  mkdir-certs:
+    cmds:
+      - mkdir -p certs
+    internal: true
